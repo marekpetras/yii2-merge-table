@@ -20,6 +20,7 @@ Another option is to use more identical tables and query only those actually req
 
 You end up with a few tables based on your denominators e.g.:
 
+```
 report              - this is the merge table
 report_15432        - these are the MyIsam tables with actual data
 report_15435
@@ -27,10 +28,6 @@ report_12344
 ...
 report_12312
 report_model        - this is the model table which is used to create the partial tables - this is the only one you actually have to create in your database yourself
-
-
-
-
 ```
 
 Installation
