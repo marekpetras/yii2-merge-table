@@ -1,0 +1,23 @@
+{
+	"name": "marekpetras/yii2-merge-table",
+	"description": "Merge engine table trait for Yii 2 Framework.",
+	"keywords": ["yii2", "extension", "database", "mysql", "merge engine", "active record", "data"],
+	"homepage": "https://github.com/marekpetras/yii2-merge-table",
+	"type": "yii2-extension",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Marek Petras",
+			"email": "mark@markpetras.eu"
+		}
+	],
+	"minimum-stability": "dev",
+	"require": {
+        "yiisoft/yii2": "*",
+	},
+	"autoload": {
+		"psr-4": {
+			"marekpetras\\mergetable\\": "/"
+		}
+	}
+}
