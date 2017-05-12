@@ -57,7 +57,7 @@ trait MergeTableTrait
     {
         // one merge table to be used of the name table_$mergeId[0] (first) if one element array passed
         if ( is_array($mergeId) && count($mergeId) === 1 && !is_array(current($mergeId)) ) {
-            $id = current($mergeId);
+            $tableName = self::tableNameMergeMask().current($mergeId);
         }
         // create temporary table from model and change to merge and union of tables as specified in $mergeId and return its name
         elseif ( is_array($mergeId) && count($mergeId) > 1 ) {
@@ -66,18 +66,26 @@ trait MergeTableTrait
                 $tableNames[] = self::tableNameMerge($id);
             }
 
-            return self::createTemporaryMergeTable($tableNames);
+            $tableName = self::createTemporaryMergeTable($tableNames);
         }
         // if not an array use the merge id to get table name table_$mergeId
         elseif ( !is_array($mergeId) && $mergeId ) {
-            $id = $mergeId;
+            $tableName = self::tableNameMergeMask().$mergeId;
         }
         // cant use any of the above for some reason and use the whole merge table unifying all the data
         else {
+            $tableName = self::tableName();
+        }
+
+        // check if it actually exists, in case it does not exist yet for example
+        $exists = Yii::$app->db->getSchema()->getTableSchema($tableName);
+
+        // if not, return the whole merge table
+        if ( !$exists ) {
             return self::tableName();
         }
 
-        return self::tableNameMergeMask().$id;
+        return $tableName;
     }
 
     /**
@@ -217,7 +225,7 @@ trait MergeTableTrait
 
         // load all merge tables except model and the actual merge
         $tables = $schema->tableNames;
-        $mergeTables = [];
+        $mergeTables = [self::tableNameModel()];
 
         foreach ($tables as $table) {
             if ( self::isMergeTable($table) ) {
