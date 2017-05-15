@@ -4,7 +4,7 @@
  * @author Marek Petras <mark@markpetras.eu>
  * @link https://github.com/marekpetras/yii2-merge-table/
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
- * @version 1.0.0
+ * @version 1.0.2
  */
 
 namespace marekpetras\mergetable;
@@ -58,6 +58,11 @@ trait MergeTableTrait
         // one merge table to be used of the name table_$mergeId[0] (first) if one element array passed
         if ( is_array($mergeId) && count($mergeId) === 1 && !is_array(current($mergeId)) ) {
             $tableName = self::tableNameMergeMask().current($mergeId);
+
+            // create if doesnt exist
+            if (!self::exists($tableName)) {
+                self::createModelTable($tableName);
+            }
         }
         // create temporary table from model and change to merge and union of tables as specified in $mergeId and return its name
         elseif ( is_array($mergeId) && count($mergeId) > 1 ) {
@@ -71,6 +76,11 @@ trait MergeTableTrait
         // if not an array use the merge id to get table name table_$mergeId
         elseif ( !is_array($mergeId) && $mergeId ) {
             $tableName = self::tableNameMergeMask().$mergeId;
+
+            // create if doesnt exist
+            if (!self::exists($tableName)) {
+                self::createModelTable($tableName);
+            }
         }
         // cant use any of the above for some reason and use the whole merge table unifying all the data
         else {
@@ -78,7 +88,7 @@ trait MergeTableTrait
         }
 
         // check if it actually exists, in case it does not exist yet for example
-        $exists = Yii::$app->db->getSchema()->getTableSchema($tableName);
+        $exists = self::exists($tableName);
 
         // if not, return the whole merge table
         if ( !$exists ) {
@@ -99,7 +109,7 @@ trait MergeTableTrait
         $tempTableName = sprintf('%s_%s_%s',self::defaultTableName(),getmypid(),date('Ymdhis'));
 
         foreach ( $tableNames as $part ) {
-            if ( !Yii::$app->db->getSchema()->getTableSchema($part) ) {
+            if ( !self::exists($part) ) {
                 throw new Exception('Trying to pull data from non-existent table ' . $part);
             }
         }
@@ -160,15 +170,10 @@ trait MergeTableTrait
         $tableName = self::tableNameMerge($mergeId);
 
         // create part table
-        $exists = Yii::$app->db->getSchema()->getTableSchema($tableName);
+        $exists = self::exists($tableName);
 
         if ( !$exists ) {
-            $sql = sprintf("
-                CREATE TABLE IF NOT EXISTS `%s` LIKE `%s`
-                ", $tableName, self::tableNameModel());
-
-            Yii::$app->db->createCommand($sql)->execute();
-
+            self::createModelTable($tableName);
             self::recreateMergeTable();
         }
         else {
@@ -178,6 +183,20 @@ trait MergeTableTrait
         }
 
         return $tableName;
+    }
+
+    /**
+     * create the desired table from model
+     * @param string $tableName the model table
+     * @return bool true on success or false on failure
+     */
+    public static function createModelTable($tableName)
+    {
+        $sql = sprintf("
+            CREATE TABLE IF NOT EXISTS `%s` LIKE `%s`
+            ", $tableName, self::tableNameModel());
+
+        return Yii::$app->db->createCommand($sql)->execute();
     }
 
     /**
@@ -216,6 +235,16 @@ trait MergeTableTrait
     }
 
     /**
+     * check if table exists, fetch fresh data
+     * @param string $tableName
+     * @return bool true on success false on failure
+     */
+    public static function exists($tableName)
+    {
+        return Yii::$app->db->getSchema()->getTableSchema($tableName,true) ? true : false;
+    }
+
+    /**
      * get names of all the merge tables for this model
      * @return array table names
      */
@@ -224,7 +253,7 @@ trait MergeTableTrait
         $schema = Yii::$app->db->getSchema();
 
         // load all merge tables except model and the actual merge
-        $tables = $schema->tableNames;
+        $tables = $schema->getTableNames('', true);
         $mergeTables = [self::tableNameModel()];
 
         foreach ($tables as $table) {
@@ -237,7 +266,8 @@ trait MergeTableTrait
     }
 
     /**
-     * Return the base table name for this model, if another one has been set, return that one, otherwise return default one
+     * Return the base table name for this model, if another one has been set,
+     * return that one, otherwise return default one
      * @return string currently set table name or default if none is set
      */
     public static function tableName()
