@@ -214,7 +214,7 @@ trait MergeTableTrait
 
         //create merge table
         $commands[] = sprintf("DROP TABLE IF EXISTS {{%s}}", $mergeTable);
-        $commands[] = sprintf("CREATE TABLE {{%s}} LIKE {{%s}}", $mergeTable, $modelTable);
+        $commands[] = sprintf("CREATE TABLE IF NOT EXISTS {{%s}} LIKE {{%s}}", $mergeTable, $modelTable);
         $commands[] = sprintf("ALTER TABLE {{%s}} ENGINE=MERGE", $mergeTable);
         // creating read only merge table
         $commands[] = sprintf("ALTER TABLE {{%s}} UNION=(%s) INSERT_METHOD=NO",$mergeTable, '{{'.implode('}},{{',$union).'}}');
