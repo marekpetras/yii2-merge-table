@@ -118,16 +118,14 @@ trait MergeTableTrait
 
         $commands = [
             sprintf("CREATE TEMPORARY TABLE {{%s}} LIKE {{%s}}",$tempTableName,self::tableNameModel()),
-            sprintf("ALTER TABLE {{%s}} ENGINE=MERGE", $tempTableName),
-            sprintf("ALTER TABLE {{%s}} UNION=(%s) INSERT_METHOD=NO",$tempTableName, '{{'.implode('}},{{',$tableNames).'}}'),
+            sprintf("ALTER TABLE {{%s}} ENGINE=MERGE UNION=(%s) INSERT_METHOD=NO", $tempTableName, '{{'.implode('}},{{',$tableNames).'}}'),
         ];
 
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
-            foreach ( $commands as $command ) {
-                Yii::$app->db->createCommand($command)->execute();
-            }
+            $command = implode(';'.PHP_EOL,$commands);
+            Yii::$app->db->createCommand($command)->execute();
         }
         catch (Exception $e) {
             $transaction->rollBack();
@@ -220,17 +218,16 @@ trait MergeTableTrait
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
-            foreach ( $commands as $command ) {
-                Yii::$app->db->createCommand($command)->execute();
-            }
+            $command = implode(';'.PHP_EOL,$commands);
+            Yii::$app->db->createCommand($command)->execute();
         }
         catch (Exception $e) {
             $transaction->rollBack();
             throw $e;
         }
-        
+
         $transaction->commit();
-            
+
         return $mergeTable;
     }
 
